@@ -1,7 +1,5 @@
 {
   "dependencies": {
-    "@google-cloud/storage": "^7.6.0",
-    "shelljs": "^0.8.5",
-    "simple-git": "^3.21.0"
+    "@google-cloud/storage": "^7.6.0"
   }
 }
