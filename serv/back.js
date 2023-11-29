@@ -36,57 +36,38 @@ export const handler = async (event) => {
   console.log('From SNS:', url);
     
   //download the code
+
+  // const fileUrl = 'https://github.com/NishithNishith/INFO6150/archive/refs/heads/main.zip';
+  const fileUrl = url;
   let d =  Date.now()
-  let submissionUrl = url;
   
   let file_path = `submission-${d}.zip`;
+  const fileName = path.join('/tmp', file_path);
+  
+  const file = fs.createWriteStream(fileName);
+  
+  let mailMsg = "Your assignment was submitted successfully"
+  let status = 1;
   
   try{
-    const response = await axios({
-      method: 'GET',
-      url: submissionUrl,
-      responseType: 'arraybuffer'
+    https.get(fileUrl, response => {
+    response.pipe(file);
+  
+    file.on('finish', () => {
+      file.close();
     });
-  
-  const bucketName = gcpBucket;
-  let fileName = `submission-${Date.now()}`;
-  const bucket = storage.bucket(bucketName);
-  const file = bucket.file(fileName);
-  await file.save(response.data);
-  //send email
-
-  console.log('the email',email)
-  
-  const messageData = {
-    from: 'neucloud <mail@neucloud.me>',
-    to: 'nishith0514@gmail.com',
-    subject: 'Submission Update',
-    text: `Your submission was uploaded successfully! The file -${url} was uploaded to the bucket - ${gcpBucket}/${fileName}`
-  };
-  
-    mgclient.messages.create(DOMAIN, messageData)
-    .then((res) => {
-      console.log(res);
-    })
-    .catch((err) => {
-      console.error(err);
+    }).on('error', error => {
+            console.log('error while downloading the file');
+            status = 0;
+            // fs.unlink(fileName);
+            
+            return 200
     });
-  
-    //save the resp in db
-    const command = new PutCommand({
-      TableName: dbName,
-      Item: {
-        email: email,
-        submission: url+d
-      },
-    });
-    const resp = await docClient.send(command);
-
-
     console.log('the file was downloaded')
   }
   catch(err){
-    console.log('error while downloading the file',err);
+    console.log('error while downloading the file2');
+    status = 0;
 
     const messageData = {
       from: 'neucloud <mail@neucloud.me>',
@@ -116,6 +97,50 @@ export const handler = async (event) => {
   }
 
 
+  //save in google cloud storage
+  
+  const bucket = storage.bucket(gcpBucket);
+  
+  console.log('gcpBucket',gcpBucket)
+  
+  console.log('gcp filename',fileName)
+
+  await bucket.upload(fileName, {
+      destination: file_path,
+  });
+  
+  //send email
+
+  console.log('the email',email)
+  
+  const messageData = {
+    from: 'neucloud <mail@neucloud.me>',
+    to: 'nishith0514@gmail.com',
+    subject: 'Submission Update',
+    text: `Your submission was uploaded successfully! The file -${url} was uploaded to the bucket - ${gcpBucket}/${file_path}`
+  };
+  
+  mgclient.messages.create(DOMAIN, messageData)
+   .then((res) => {
+     console.log(res);
+   })
+   .catch((err) => {
+     console.error(err);
+   });
+  
+
+
+  
+  //save the resp in db
+  const command = new PutCommand({
+    TableName: dbName,
+    Item: {
+      email: email,
+      submission: url+d
+    },
+  });
+  const response = await docClient.send(command);
+    
   return 200;
     
 };
