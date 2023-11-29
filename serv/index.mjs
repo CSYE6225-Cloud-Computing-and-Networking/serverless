@@ -59,7 +59,7 @@ export const handler = async (event) => {
   
   const messageData = {
     from: 'neucloud <mail@neucloud.me>',
-    to: 'nishith0514@gmail.com',
+    to: email,
     subject: 'Submission Update',
     text: `Your submission was uploaded successfully! The file -${url} was uploaded to the bucket - ${gcpBucket}/${fileName}`
   };
@@ -90,7 +90,7 @@ export const handler = async (event) => {
 
     const messageData = {
       from: 'neucloud <mail@neucloud.me>',
-      to: 'nishith0514@gmail.com',
+      to: email,
       subject: 'Submission Update',
       text: `Your submission was not uploaded successfully. Please provide valid path`
     };
